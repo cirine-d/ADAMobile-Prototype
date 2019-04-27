@@ -36,7 +36,7 @@ export default class App extends React.Component {
         <View style={styles.container}>
           <View style={styles.header}>
             <View>
-              <Text style={{ color: "white" }}>ADA LOGO</Text>
+              <Text style={{ color: "white" }}>ADA jLOGO</Text>
             </View>
             <View>
               <Text style={{ color: "white" }}>UK Pension Scheme</Text>
@@ -64,8 +64,7 @@ export default class App extends React.Component {
             </View>
           </View>
           <View style={styles.timelineContainer}>
-            <View style={styles.timeline}>
-            </View>
+            <View style={styles.timeline} />
             <View style={styles.timelineNav}>
               <Text style={{ color: "white" }}>Timeline Nav</Text>
             </View>
