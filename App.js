@@ -1,7 +1,11 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import * as R from "ramda";
+import moment from "moment";
+
+import { StyleSheet, Text, View, ScrollView, Button } from "react-native";
 
 import * as firebase from "firebase";
+import ChartSegment from "./ChartSegment";
 
 // Initialize Firebase
 const firebaseConfig = {
@@ -13,10 +17,16 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 
+const getRandomInt = (min, max) => {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min)) + min; //The maximum is exclusive and the minimum is inclusive
+};
+
 export default class App extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { data: null };
+    this.state = { data: null, scrollPosition: null };
   }
 
   componentDidMount() {
@@ -26,11 +36,69 @@ export default class App extends React.Component {
       .on("value", snapshot => {
         const data = snapshot.val();
 
-        this.setState({ data: data });
+        this.setState({
+          data: data,
+          scrollPosition: data.length - 2
+        });
       });
   }
 
+  formatData(data) {
+    let difference = null;
+    let lowestValue = null;
+
+    const getExtremes = data => {
+      let highestValue = null;
+      let lowestValue = null;
+      data.map(x => {
+        if (highestValue === null || highestValue < x.fundingLevel) {
+          highestValue = x.fundingLevel;
+        }
+        if (lowestValue === null || lowestValue > x.fundingLevel) {
+          lowestValue = x.fundingLevel;
+        }
+      });
+      return {
+        difference: highestValue - lowestValue,
+        lowestValue: lowestValue
+      };
+    };
+
+    difference = getExtremes(data).difference;
+    lowestValue = getExtremes(data).lowestValue;
+
+    return (
+      difference &&
+      lowestValue &&
+      data.map(x => ({
+        ...x,
+        chartPoint: (x.fundingLevel - lowestValue) / difference
+      }))
+    );
+  }
+
+  renderSegments(data) {
+    const segments = [];
+    for (var i = 1; i < data.length; i++) {
+      segments.push(
+        <ChartSegment
+          firstPoint={data[i]}
+          secondPoint={data[i + 1] ? data[i + 1] : data[i]}
+          key={i}
+        />
+      );
+    }
+    return segments;
+  }
+
   render() {
+    let date = null;
+    if (this.state.data) {
+      date = new Date(
+        Date.parse(this.state.data[this.state.scrollPosition].estimatedDate)
+      );
+    }
+
     return (
       this.state.data && (
         <View style={styles.container}>
@@ -45,29 +113,78 @@ export default class App extends React.Component {
           </View>
           <View style={styles.body}>
             <View style={styles.infoCard}>
-              <Text>ASSETS</Text>
-              <Text>{this.state.data[1].assets}</Text>
+              <Text style={styles.valueTitle}>ASSETS</Text>
+              <Text style={styles.value}>
+                {Math.round(
+                  this.state.data[this.state.scrollPosition].assets / 1000000
+                )}
+                m
+              </Text>
             </View>
             <View style={styles.infoCard}>
-              <Text>LIABILITIES</Text>
-              <Text>{this.state.data[1].liabilities}</Text>
+              <Text style={styles.valueTitle}>LIABILITIES</Text>
+              <Text style={styles.value}>
+                {Math.round(
+                  this.state.data[this.state.scrollPosition].liabilities /
+                    1000000
+                )}
+                m
+              </Text>
             </View>
 
             <View style={styles.infoCard}>
-              <Text>REQUIRED RETURN 3</Text>
-              <Text>{this.state.data[1].requiredReturn}</Text>
+              <Text style={styles.valueTitle}>REQUIRED RETURN</Text>
+              <Text style={styles.value}>
+                {(
+                  this.state.data[this.state.scrollPosition].requiredReturn *
+                  100
+                ).toFixed(2)}
+                %
+              </Text>
             </View>
 
             <View style={styles.infoCard}>
-              <Text>FUNDING LEVEL</Text>
-              <Text>{this.state.data[1].fundingLevel}</Text>
+              <Text style={styles.valueTitle}>FUNDING LEVEL</Text>
+              <Text style={styles.value}>
+                {(
+                  this.state.data[this.state.scrollPosition].fundingLevel * 100
+                ).toFixed(2)}
+                %
+              </Text>
             </View>
           </View>
           <View style={styles.timelineContainer}>
-            <View style={styles.timeline} />
-            <View style={styles.timelineNav}>
-              <Text style={{ color: "white" }}>Timeline Nav</Text>
-            </View>
+            <ScrollView
+              horizontal
+              snapToInterval={50}
+              snapToAlignment={"center"}
+              decelerationRate={0}
+              onScroll={event =>
+                this.setState({
+                  scrollPosition: getRandomInt(0, this.state.data.length)
+                })
+              }
+              showsHorizontalScrollIndicator={false}
+              showsVerticalScrollIndicator={false}
+              alwaysBounceVertical={false}
+              directionalLockEnabled
+              style={styles.scrollView}
+            >
+              {this.renderSegments(this.formatData(this.state.data))}
+            </ScrollView>
+          </View>
+          <View style={styles.graphOverlay}>
+            <Button
+              onPress={() =>
+                this.setState({
+                  scrollPosition: this.state.data.length - 2
+                })
+              }
+              title="H"
+              color="#841584"
+              accessibilityLabel="H"
+            />
+            <Text>{moment(date).format("Do MMM YYYY")}</Text>
           </View>
         </View>
       )
@@ -78,7 +195,8 @@ export default class App extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center"
+    justifyContent: "center",
+    backgroundImage: "linear-gradient(red, yellow)"
   },
   header: {
     height: "15%",
@@ -103,8 +221,7 @@ const styles = StyleSheet.create({
   },
   timelineContainer: {
     height: "40%",
-    width: "100%",
-    backgroundColor: "grey"
+    width: "100%"
   },
   timeline: {
     height: "85%",
@@ -118,5 +235,26 @@ const styles = StyleSheet.create({
     backgroundColor: "navy",
     alignItems: "center",
     justifyContent: "center"
+  },
+  graphOverlay: {
+    height: "10%",
+    width: "70%",
+    position: "absolute",
+    opacity: 1,
+    bottom: 0,
+    left: 10,
+    justifyContent: "flex-start",
+    alignItems: "center",
+    flexDirection: "row"
+  },
+  valueTitle: {
+    fontWeight: "100",
+    fontSize: 10
+  },
+  value: {
+    fontSize: 40
+  },
+  scrollView: {
+    paddingTop: 5
   }
 });
