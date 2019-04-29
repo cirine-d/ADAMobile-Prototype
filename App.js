@@ -1,6 +1,7 @@
 import React from "react";
 import * as R from "ramda";
 import moment from "moment";
+import AnimateNumber from "react-native-animate-number";
 
 import { StyleSheet, Text, View, ScrollView, Button } from "react-native";
 
@@ -115,19 +116,25 @@ export default class App extends React.Component {
             <View style={styles.infoCard}>
               <Text style={styles.valueTitle}>ASSETS</Text>
               <Text style={styles.value}>
-                {Math.round(
-                  this.state.data[this.state.scrollPosition].assets / 1000000
-                )}
+                <AnimateNumber
+                  countBy={100}
+                  value={Math.round(
+                    this.state.data[this.state.scrollPosition].assets / 1000000
+                  )}
+                />
                 m
               </Text>
             </View>
             <View style={styles.infoCard}>
               <Text style={styles.valueTitle}>LIABILITIES</Text>
               <Text style={styles.value}>
-                {Math.round(
-                  this.state.data[this.state.scrollPosition].liabilities /
-                    1000000
-                )}
+                <AnimateNumber
+                  countBy={100}
+                  value={Math.round(
+                    this.state.data[this.state.scrollPosition].liabilities /
+                      1000000
+                  )}
+                />
                 m
               </Text>
             </View>
@@ -135,10 +142,14 @@ export default class App extends React.Component {
             <View style={styles.infoCard}>
               <Text style={styles.valueTitle}>REQUIRED RETURN</Text>
               <Text style={styles.value}>
-                {(
-                  this.state.data[this.state.scrollPosition].requiredReturn *
-                  100
-                ).toFixed(2)}
+                <AnimateNumber
+                  countBy={0.5}
+                  timing="easeIn"
+                  value={(
+                    this.state.data[this.state.scrollPosition].requiredReturn *
+                    100
+                  ).toFixed(1)}
+                />
                 %
               </Text>
             </View>
@@ -146,9 +157,13 @@ export default class App extends React.Component {
             <View style={styles.infoCard}>
               <Text style={styles.valueTitle}>FUNDING LEVEL</Text>
               <Text style={styles.value}>
-                {(
-                  this.state.data[this.state.scrollPosition].fundingLevel * 100
-                ).toFixed(2)}
+                <AnimateNumber
+                  countBy={0.5}
+                  value={(
+                    this.state.data[this.state.scrollPosition].fundingLevel *
+                    100
+                  ).toFixed(1)}
+                />
                 %
               </Text>
             </View>
@@ -196,7 +211,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",
-    backgroundImage: "linear-gradient(red, yellow)"
+    backgroundColor: "linear-gradient(red, yellow)"
   },
   header: {
     height: "15%",
