@@ -2,11 +2,21 @@ import React from "react";
 import * as R from "ramda";
 import moment from "moment";
 import AnimateNumber from "react-native-animate-number";
+import { LinearGradient, Font } from "expo";
+import { Ionicons } from "@expo/vector-icons";
 
-import { StyleSheet, Text, View, ScrollView, Button } from "react-native";
+import {
+  StyleSheet,
+  Text,
+  View,
+  ScrollView,
+  Button,
+  Image
+} from "react-native";
 
 import * as firebase from "firebase";
 import ChartSegment from "./ChartSegment";
+import StaticTooltip from "./StaticTooltip";
 
 // Initialize Firebase
 const firebaseConfig = {
@@ -42,6 +52,10 @@ export default class App extends React.Component {
           scrollPosition: data.length - 2
         });
       });
+
+    Font.loadAsync({
+      "roboto-thin": require("./assets/fonts/Roboto-Thin.ttf")
+    });
   }
 
   formatData(data) {
@@ -103,104 +117,117 @@ export default class App extends React.Component {
     return (
       this.state.data && (
         <View style={styles.container}>
-          <View style={styles.header}>
-            <View>
-              <Text style={{ color: "white" }}>ADA jLOGO</Text>
+          <LinearGradient colors={["#253746", "#2f3957", "#fbdce7"]}>
+            <View style={styles.header}>
+              <View>
+                <Image source={require("./assets/ADA_logo.png")} />
+              </View>
+              <View style={{ marginLeft: "3%" }}>
+                <Text style={{ color: "white" }}>UK Pension Scheme</Text>
+                <Text style={{ color: "#fbdce7" }}>Gilts Flat</Text>
+              </View>
             </View>
-            <View>
-              <Text style={{ color: "white" }}>UK Pension Scheme</Text>
-              <Text style={{ color: "white" }}>Gilts Flat</Text>
-            </View>
-          </View>
-          <View style={styles.body}>
-            <View style={styles.infoCard}>
-              <Text style={styles.valueTitle}>ASSETS</Text>
-              <Text style={styles.value}>
-                <AnimateNumber
-                  countBy={100}
-                  value={Math.round(
-                    this.state.data[this.state.scrollPosition].assets / 1000000
-                  )}
-                />
-                m
-              </Text>
-            </View>
-            <View style={styles.infoCard}>
-              <Text style={styles.valueTitle}>LIABILITIES</Text>
-              <Text style={styles.value}>
-                <AnimateNumber
-                  countBy={100}
-                  value={Math.round(
-                    this.state.data[this.state.scrollPosition].liabilities /
-                      1000000
-                  )}
-                />
-                m
-              </Text>
-            </View>
+            <View style={styles.body}>
+              <View style={styles.infoCard}>
+                <Text style={styles.valueTitle}>ASSETS</Text>
+                <Text style={styles.value}>
+                  <AnimateNumber
+                    countBy={100}
+                    interval={40}
+                    value={Math.round(
+                      this.state.data[this.state.scrollPosition].assets /
+                        1000000
+                    )}
+                  />
+                  m
+                </Text>
+              </View>
+              <View style={styles.infoCard}>
+                <Text style={styles.valueTitle}>LIABILITIES</Text>
+                <Text style={styles.value}>
+                  <AnimateNumber
+                    countBy={100}
+                    interval={40}
+                    value={Math.round(
+                      this.state.data[this.state.scrollPosition].liabilities /
+                        1000000
+                    )}
+                  />
+                  m
+                </Text>
+              </View>
 
-            <View style={styles.infoCard}>
-              <Text style={styles.valueTitle}>REQUIRED RETURN</Text>
-              <Text style={styles.value}>
-                <AnimateNumber
-                  countBy={0.5}
-                  timing="easeIn"
-                  value={(
-                    this.state.data[this.state.scrollPosition].requiredReturn *
-                    100
-                  ).toFixed(1)}
-                />
-                %
-              </Text>
-            </View>
+              <View style={styles.infoCard}>
+                <Text style={styles.valueTitle}>REQUIRED RETURN</Text>
+                <Text style={styles.value}>
+                  <AnimateNumber
+                    countBy={0.5}
+                    interval={40}
+                    timing="easeIn"
+                    value={(
+                      this.state.data[this.state.scrollPosition]
+                        .requiredReturn * 100
+                    ).toFixed(1)}
+                  />
+                  %
+                </Text>
+              </View>
 
-            <View style={styles.infoCard}>
-              <Text style={styles.valueTitle}>FUNDING LEVEL</Text>
-              <Text style={styles.value}>
-                <AnimateNumber
-                  countBy={0.5}
-                  value={(
-                    this.state.data[this.state.scrollPosition].fundingLevel *
-                    100
-                  ).toFixed(1)}
-                />
-                %
+              <View style={styles.infoCard}>
+                <Text style={styles.valueTitle}>FUNDING LEVEL</Text>
+                <Text style={styles.fundingLevelValue}>
+                  <AnimateNumber
+                    countBy={0.5}
+                    interval={40}
+                    value={(
+                      this.state.data[this.state.scrollPosition].fundingLevel *
+                      100
+                    ).toFixed(1)}
+                  />
+                  %
+                </Text>
+              </View>
+            </View>
+            <View style={styles.timelineContainer}>
+              <ScrollView
+                horizontal
+                snapToInterval={50}
+                snapToAlignment={"center"}
+                decelerationRate={0}
+                onScroll={event =>
+                  this.setState({
+                    scrollPosition: getRandomInt(0, this.state.data.length)
+                  })
+                }
+                showsHorizontalScrollIndicator={false}
+                showsVerticalScrollIndicator={false}
+                alwaysBounceVertical={false}
+                directionalLockEnabled
+                style={styles.scrollView}
+              >
+                {this.renderSegments(this.formatData(this.state.data))}
+              </ScrollView>
+            </View>
+            <View style={styles.graphOverlay}>
+              <Ionicons
+                onPress={() =>
+                  this.setState({
+                    scrollPosition: this.state.data.length - 2
+                  })
+                }
+                name="md-time"
+                size={35}
+                color="#253746"
+                style={{ paddingRight: "5%" }}
+              />
+              <Text style={styles.dateOverlay}>
+                {moment(date).format("Do MMM YYYY")}
               </Text>
             </View>
-          </View>
-          <View style={styles.timelineContainer}>
-            <ScrollView
-              horizontal
-              snapToInterval={50}
-              snapToAlignment={"center"}
-              decelerationRate={0}
-              onScroll={event =>
-                this.setState({
-                  scrollPosition: getRandomInt(0, this.state.data.length)
-                })
-              }
-              showsHorizontalScrollIndicator={false}
-              showsVerticalScrollIndicator={false}
-              alwaysBounceVertical={false}
-              directionalLockEnabled
-              style={styles.scrollView}
-            >
-              {this.renderSegments(this.formatData(this.state.data))}
-            </ScrollView>
-          </View>
-          <View style={styles.graphOverlay}>
-            <Button
-              onPress={() =>
-                this.setState({
-                  scrollPosition: this.state.data.length - 2
-                })
-              }
-              title="H"
-              color="#841584"
-              accessibilityLabel="H"
-            />
-            <Text>{moment(date).format("Do MMM YYYY")}</Text>
-          </View>
+            <View style={styles.staticTooltip}>
+              <StaticTooltip />
+            </View>
+          </LinearGradient>
         </View>
       )
     );
@@ -210,29 +237,34 @@ export default class App extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    backgroundColor: "linear-gradient(red, yellow)"
+    justifyContent: "center"
   },
   header: {
+    paddingLeft: "5%",
+    paddingTop: "8%",
     height: "15%",
     width: "100%",
-    backgroundColor: "navy",
-    alignItems: "center",
-    justifyContent: "space-evenly",
+    alignItems: "flex-start",
     flexDirection: "row"
   },
   body: {
     height: "45%",
     width: "100%",
-    backgroundColor: "#fff",
     flexDirection: "row",
-    flexWrap: "wrap"
+    flexWrap: "wrap",
+    justifyContent: "space-evenly",
+    alignItems: "center",
+    padding: "2%"
   },
   infoCard: {
-    height: "50%",
-    width: "50%",
-    alignItems: "center",
-    justifyContent: "center"
+    height: "45%",
+    width: "47%",
+    marginTop: "2%",
+    alignItems: "flex-start",
+    justifyContent: "center",
+    // elevation: 1,
+    borderColor: "white",
+    paddingLeft: "2%"
   },
   timelineContainer: {
     height: "40%",
@@ -264,12 +296,37 @@ const styles = StyleSheet.create({
   },
   valueTitle: {
     fontWeight: "100",
+    color: "#fbdce7",
     fontSize: 10
   },
   value: {
-    fontSize: 40
+    fontFamily: "roboto-thin",
+    fontSize: 50,
+    color: "white",
+    fontWeight: "100"
+  },
+  fundingLevelValue: {
+    fontFamily: "roboto-thin",
+    fontSize: 50,
+    color: "#ea1864",
+    fontWeight: "100"
+  },
+  dateOverlay: {
+    fontFamily: "roboto-thin",
+    fontSize: 40,
+    color: "#253746",
+    fontWeight: "100"
   },
   scrollView: {
     paddingTop: 5
+  },
+  staticTooltip: {
+    height: "40%",
+    width: "100%",
+    position: "absolute",
+    opacity: 1,
+    bottom: 60,
+    justifyContent: "flex-start",
+    alignItems: "center"
   }
 });
